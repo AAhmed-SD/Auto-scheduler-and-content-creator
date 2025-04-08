@@ -13,20 +13,26 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Auto Scheduler & Content Creator"
     VERSION: str = "1.0.0"
+    API_KEY: str = os.getenv("API_KEY", "")
 
     # Database
     DATABASE_URL: str = "sqlite:///./sql_app.db"
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "autoscheduler")
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
 
     # Firebase Configuration
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")
-    FIREBASE_PRIVATE_KEY: str = os.getenv("FIREBASE_PRIVATE_KEY", "").replace(
-        "\\n", "\n"
-    )
+    FIREBASE_PRIVATE_KEY: str = os.getenv("FIREBASE_PRIVATE_KEY", "")
     FIREBASE_CLIENT_EMAIL: str = os.getenv("FIREBASE_CLIENT_EMAIL", "")
 
     # OpenAI
@@ -35,6 +41,7 @@ class Settings(BaseSettings):
     # Storage
     UPLOAD_FOLDER: str = "uploads"
     MAX_CONTENT_LENGTH: int = 16 * 1024 * 1024  # 16MB
+    ALLOWED_EXTENSIONS: set = {"png", "jpg", "jpeg", "gif", "mp4"}
 
     # Social Media API Keys
     INSTAGRAM_ACCESS_TOKEN: Optional[str] = os.getenv("INSTAGRAM_ACCESS_TOKEN")
@@ -42,10 +49,15 @@ class Settings(BaseSettings):
     YOUTUBE_API_KEY: Optional[str] = os.getenv("YOUTUBE_API_KEY")
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:19006"]
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",  # React
+        "http://localhost:8000",  # FastAPI
+        "http://localhost:8080",  # Alternative port
+    ]
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_PER_HOUR: int = 1000
 
     # Admin
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
@@ -54,9 +66,61 @@ class Settings(BaseSettings):
     # Firebase credentials
     FIREBASE_CREDENTIALS: Optional[str] = None
 
+    # Redis
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
+
+    # Email
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@example.com")
+
+    # Security Headers
+    SECURITY_HEADERS: dict = {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "default-src 'self'",
+    }
+
     class Config:
         case_sensitive = True
         env_file = ".env"
+        env_file_encoding = "utf-8"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.SQLALCHEMY_DATABASE_URI = (
+            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
+        )
+        
+        # Validate required settings
+        self._validate_settings()
+
+    def _validate_settings(self):
+        """Validate required settings"""
+        required_settings = [
+            "SECRET_KEY",
+            "FIREBASE_PROJECT_ID",
+            "FIREBASE_PRIVATE_KEY",
+            "FIREBASE_CLIENT_EMAIL",
+            "POSTGRES_PASSWORD",
+        ]
+        
+        missing_settings = [
+            setting for setting in required_settings
+            if not getattr(self, setting)
+        ]
+        
+        if missing_settings:
+            raise ValueError(
+                f"Missing required settings: {', '.join(missing_settings)}"
+            )
 
     def get_firebase_credentials(self) -> Dict[str, Any]:
         """Get Firebase credentials as a dictionary"""
