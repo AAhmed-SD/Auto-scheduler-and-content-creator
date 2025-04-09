@@ -1,11 +1,18 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, cast
+import enum
 
 from app.core.database import Base
 
+
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    CREATOR = "creator"
+    EDITOR = "editor"
+    VIEWER = "viewer"
 
 class User(Base):
     __tablename__ = "users"
@@ -18,6 +25,9 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    role = Column(Enum(UserRole), default=UserRole.CREATOR)
+    profile_picture = Column(String, nullable=True)
+    timezone = Column(String, default="UTC")
 
     # Security fields
     two_factor_enabled = Column(Boolean, default=False)
@@ -38,6 +48,7 @@ class User(Base):
     projects = relationship("Project", back_populates="owner")
     content = relationship("Content", back_populates="user")
     schedules = relationship("Schedule", back_populates="user")
+    analytics = relationship("Analytics", back_populates="user")
 
     def is_account_locked(self) -> bool:
         """Check if the account is currently locked."""
@@ -55,3 +66,6 @@ class User(Base):
             
         if self.failed_login_attempts >= 5:  # Lock after 5 failed attempts
             self.account_locked_until = cast(Column[datetime], datetime.now() + timedelta(minutes=30))
+
+    def __repr__(self):
+        return f"<User {self.email}>"

@@ -19,25 +19,87 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Virtual Environment
-venv/
-env/
-ENV/
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+.nuxt/
+.cache/
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
 
 # Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment variables
-.env
-.env.local 
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+dist/
+build/
+out/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.der
+*.p7b
+*.p7c
+*.p7m
+*.p7s
+*.crl
+*.crl.der
+*.crl.pem
+*.crt.der
+*.crt.pem
+*.csr
+*.csr.der
+*.csr.pem
+*.key.der
+*.key.pem
+
+# Virtual Environment
+venv/
+env/
+ENV/ 

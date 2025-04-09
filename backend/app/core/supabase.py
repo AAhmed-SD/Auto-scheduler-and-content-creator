@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from app.core.config import get_settings
+from .config import get_settings
 import os
 from dotenv import load_dotenv
 
@@ -7,15 +7,41 @@ load_dotenv()
 
 settings = get_settings()
 
-def get_supabase_client() -> Client:
-    """Get Supabase client instance"""
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-    
-    if not supabase_url or not supabase_key:
-        raise ValueError("Supabase URL and Key must be set in environment variables")
-    
-    return create_client(supabase_url, supabase_key)
+supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+
+def get_supabase():
+    return supabase
+
+async def get_user_by_email(email: str):
+    try:
+        response = supabase.table('users').select("*").eq('email', email).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        raise Exception(f"Failed to fetch user: {str(e)}")
+
+async def create_user(email: str, password: str, full_name: str):
+    try:
+        # Create auth user
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        if auth_response.user:
+            # Create profile in users table
+            user_response = supabase.table('users').insert({
+                "id": auth_response.user.id,
+                "email": email,
+                "full_name": full_name,
+                "role": "creator"
+            }).execute()
+            
+            return user_response.data[0]
+        return None
+    except Exception as e:
+        raise Exception(f"Failed to create user: {str(e)}")
 
 # Initialize Supabase client
 supabase: Client = get_supabase_client() 

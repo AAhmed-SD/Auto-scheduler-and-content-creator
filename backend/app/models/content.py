@@ -3,13 +3,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 from typing import Dict, Any, List, Optional
-
-from app.core.database import Base
+from .base import BaseModel
 
 
 class ContentType(str, enum.Enum):
     VIDEO = "video"
     IMAGE = "image"
+    TEXT = "text"
+    AUDIO = "audio"
     CAROUSEL = "carousel"
 
 
@@ -22,28 +23,34 @@ class ContentStatus(str, enum.Enum):
     FAILED = "failed"
 
 
-class Content(Base):
+class Content(BaseModel):
     __tablename__ = "content"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    description = Column(String)
-    content_type: Column[ContentType] = Column(Enum(ContentType), nullable=False)
-    status: Column[ContentStatus] = Column(Enum(ContentStatus), default=ContentStatus.DRAFT)
+    description = Column(String, nullable=True)
+    type = Column(Enum(ContentType), nullable=False)
+    status = Column(Enum(ContentStatus), default=ContentStatus.DRAFT)
     style_template: Column[Optional[Dict[str, Any]]] = Column(JSON)
     media_url = Column(String)
     thumbnail_url = Column(String)
-    metadata: Column[Dict[str, Any]] = Column(JSON, default={})
+    metadata = Column(JSON, nullable=True)
+    platform_specific_data = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    user_id = Column(Integer, ForeignKey("users.id"))
+    file_path = Column(String, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="content")
     schedules = relationship("Schedule", back_populates="content")
+    analytics = relationship("Analytics", back_populates="content")
+
+    def __repr__(self):
+        return f"<Content {self.title} ({self.type})>"
 
 
-class Schedule(Base):
+class Schedule(BaseModel):
     __tablename__ = "schedules"
 
     id = Column(Integer, primary_key=True, index=True)

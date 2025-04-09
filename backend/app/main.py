@@ -1,54 +1,42 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
-from dotenv import load_dotenv
-import os
-from .api.v1.auth import router as auth_router
-from .api.v1.content import router as content_router
-from .api.v1.social import router as social_router
-from .api.v1.email import router as email_router
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from .api.v1.api import api_router
+from .core.config import get_settings
 
-# Load environment variables
-load_dotenv()
+settings = get_settings()
 
-# Initialize FastAPI app
 app = FastAPI(
-    title="Auto Scheduler & Content Creator",
-    description="API for auto scheduling and content creation",
+    title=settings.APP_NAME,
+    description="API for automated content scheduling and management",
     version="1.0.0"
 )
 
-# Configure CORS
-# TODO: Configure this properly for production
+# CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# OAuth2 scheme for token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# Trusted Host middleware
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["*"]  # In production, replace with specific hosts
+)
 
+# GZip compression
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Root endpoint
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Auto Scheduler & Content Creator API"}
-
-
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-
-# Include routers
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(content_router, prefix="/api/v1/content", tags=["content"])
-app.include_router(social_router, prefix="/api/v1/social", tags=["social"])
-app.include_router(email_router, prefix="/api/v1/email", tags=["email"])
+    return {"message": "Welcome to Auto-Scheduler API"}
 
 if __name__ == "__main__":
     import uvicorn
