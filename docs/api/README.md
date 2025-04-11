@@ -1,5 +1,238 @@
 # API Documentation
 
+## Overview
+This document provides detailed information about the Auto-Scheduler & Content Creator API endpoints, request/response formats, and authentication requirements.
+
+## Authentication
+
+### JWT Authentication
+All API endpoints require JWT authentication in the Authorization header:
+```
+Authorization: Bearer <jwt_token>
+```
+
+### Token Refresh
+```http
+POST /api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "string"
+}
+```
+
+## Endpoints
+
+### Content Management
+
+#### Create Content
+```http
+POST /api/content
+Content-Type: application/json
+
+{
+  "title": "string",
+  "content_type": "string",
+  "content_data": {},
+  "project_id": "uuid",
+  "schedule": {
+    "publish_at": "datetime",
+    "platforms": ["string"]
+  }
+}
+```
+
+#### Get Content
+```http
+GET /api/content/{content_id}
+```
+
+#### Update Content
+```http
+PUT /api/content/{content_id}
+Content-Type: application/json
+
+{
+  "title": "string",
+  "content_data": {},
+  "status": "string"
+}
+```
+
+### Social Media Integration
+
+#### Platform Posts
+
+##### Instagram
+```http
+POST /api/platforms/instagram/posts
+Content-Type: application/json
+
+{
+  "content_id": "uuid",
+  "caption": "string",
+  "location": "string",
+  "hashtags": ["string"]
+}
+```
+
+##### TikTok
+```http
+POST /api/platforms/tiktok/videos
+Content-Type: application/json
+
+{
+  "content_id": "uuid",
+  "description": "string",
+  "hashtags": ["string"],
+  "sound_id": "string"
+}
+```
+
+##### LinkedIn
+```http
+POST /api/platforms/linkedin/posts
+Content-Type: application/json
+
+{
+  "content_id": "uuid",
+  "text": "string",
+  "visibility": "string"
+}
+```
+
+### Analytics
+
+#### Get Content Performance
+```http
+GET /api/analytics/content/{content_id}
+```
+
+#### Get Platform Metrics
+```http
+GET /api/analytics/platforms/{platform}
+```
+
+### Team Collaboration
+
+#### Create Team
+```http
+POST /api/teams
+Content-Type: application/json
+
+{
+  "name": "string",
+  "project_id": "uuid",
+  "members": [
+    {
+      "user_id": "uuid",
+      "role": "string"
+    }
+  ]
+}
+```
+
+#### Assign Content
+```http
+POST /api/teams/{team_id}/assign
+Content-Type: application/json
+
+{
+  "content_id": "uuid",
+  "assignee_id": "uuid"
+}
+```
+
+## Error Handling
+
+### Error Response Format
+```json
+{
+  "error": {
+    "code": "string",
+    "message": "string",
+    "details": {}
+  }
+}
+```
+
+### Common Error Codes
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 429: Too Many Requests
+- 500: Internal Server Error
+
+## Rate Limiting
+- 100 requests per minute per user
+- 1000 requests per hour per user
+
+## Webhooks
+
+### Available Events
+- content.created
+- content.updated
+- content.published
+- content.failed
+- team.assigned
+- analytics.updated
+
+### Webhook Payload Format
+```json
+{
+  "event": "string",
+  "data": {},
+  "timestamp": "datetime"
+}
+```
+
+## Best Practices
+
+### Request Headers
+- Always include Content-Type
+- Use Accept header for response format
+- Include User-Agent for tracking
+
+### Response Handling
+- Check status codes
+- Handle errors gracefully
+- Implement retry logic
+- Cache responses when appropriate
+
+### Security
+- Use HTTPS
+- Validate all input
+- Sanitize output
+- Implement rate limiting
+- Monitor usage
+
+## SDKs and Libraries
+
+### Python
+```python
+from auto_scheduler import Client
+
+client = Client(api_key="your_api_key")
+content = client.content.create({
+    "title": "My Post",
+    "content_type": "text",
+    "content_data": {"text": "Hello World"}
+})
+```
+
+### JavaScript
+```javascript
+import { Client } from 'auto-scheduler';
+
+const client = new Client({ apiKey: 'your_api_key' });
+const content = await client.content.create({
+    title: 'My Post',
+    contentType: 'text',
+    contentData: { text: 'Hello World' }
+});
+```
+
 ## Core Endpoints
 
 ### Content Generation
