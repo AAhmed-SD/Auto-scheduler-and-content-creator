@@ -18,10 +18,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # CORS
-    BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
     
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
+    def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):
@@ -65,8 +65,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # API Settings
-    PROJECT_NAME: str = "Auto Scheduler & Content Creator"
+    PROJECT_NAME: str = "Auto-Scheduler & Content Creator"
     VERSION: str = "1.0.0"
+    DESCRIPTION: str = "API for automated content scheduling and management"
     API_KEY: str = os.getenv("API_KEY", "")
 
     # Database
