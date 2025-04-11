@@ -31,7 +31,7 @@
     - [✓] Scheduled posts (in content table)
     - [✓] Media storage
     - [✓] KPI tracking
-  - [✓] Configure authentication settings
+  - [ ] Configure authentication settings
   - [✓] Set up storage buckets
   - [✓] Configure security policies
 
