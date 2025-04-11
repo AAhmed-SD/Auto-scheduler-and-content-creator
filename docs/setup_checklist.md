@@ -51,6 +51,30 @@
     - [✓] Assets table
     - [✓] Asset versions table
     - [✓] Asset usage table
+  - [✓] Platform-Specific Tables
+    - [✓] Instagram
+      - [✓] Posts table
+      - [✓] Stories table
+    - [✓] TikTok
+      - [✓] Videos table
+      - [✓] Trends table
+    - [✓] LinkedIn
+      - [✓] Posts table
+      - [✓] Company posts table
+    - [✓] Facebook
+      - [✓] Posts table
+      - [✓] Insights table
+    - [✓] Pinterest
+      - [✓] Pins table
+      - [✓] Boards table
+      - [✓] Trends table
+    - [✓] Threads
+      - [✓] Posts table
+      - [✓] Metrics table
+    - [✓] X (Twitter)
+      - [✓] Posts table
+      - [✓] Spaces table
+      - [✓] Trends table
 
 - [✓] Security Implementation
   - [✓] Row Level Security (RLS)
