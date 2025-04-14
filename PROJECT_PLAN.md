@@ -475,74 +475,6 @@ When ready to scale:
 
 ### Development Costs
 
-#### 1. Core Team (6 months)
-- **Backend Developer** (Full-time)
-  - Salary: $120,000/year
-  - 6 months cost: $60,000
-
-- **Frontend Developer** (Full-time)
-  - Salary: $110,000/year
-  - 6 months cost: $55,000
-
-- **Mobile Developer** (Full-time)
-  - Salary: $110,000/year
-  - 6 months cost: $55,000
-
-- **UI/UX Designer** (Full-time)
-  - Salary: $100,000/year
-  - 6 months cost: $50,000
-
-- **DevOps Engineer** (Part-time)
-  - Salary: $130,000/year
-  - 3 months cost: $32,500
-
-- **Project Manager** (Part-time)
-  - Salary: $100,000/year
-  - 3 months cost: $25,000
-
-**Total Development Team Cost**: $277,500
-
-#### 2. Infrastructure & Services
-- **Cloud Services** (Google Cloud Platform)
-  - Compute Engine: $2,000/month
-  - Cloud Storage: $1,000/month
-  - Supabase: $500/month
-  - 6 months cost: $21,000
-
-- **AI Services**
-  - OpenAI API: $5,000/month
-  - Video Processing: $3,000/month
-  - 6 months cost: $48,000
-
-- **Third-party Services**
-  - Email Service (SendGrid): $500/month
-  - Social Media APIs: $1,000/month
-  - Analytics Tools: $500/month
-  - 6 months cost: $12,000
-
-**Total Infrastructure Cost**: $81,000
-
-#### 3. Additional Costs
-- **Design Assets**: $10,000
-- **Legal & Compliance**: $15,000
-- **Testing & QA**: $20,000
-- **Marketing & Launch**: $25,000
-- **Contingency** (15%): $63,375
-
-**Total Additional Costs**: $133,375
-
-### Total Initial Development Cost: $491,875
-
-### Monthly Operating Costs (Post-Launch)
-- **Cloud Infrastructure**: $5,000
-- **AI Services**: $8,000
-- **Third-party Services**: $2,000
-- **Maintenance & Support**: $10,000
-- **Marketing**: $5,000
-- **Customer Support**: $8,000
-
-**Total Monthly Operating Cost**: $38,000
-
 ### Cost Optimization Strategies
 1. **Phased Development**
    - Start with MVP features
@@ -577,17 +509,6 @@ When ready to scale:
    - Bootstrap with personal savings
    - Reinvest initial revenue
 
-2. **Angel Investment**
-   - Target: $500,000
-   - Equity: 15-20%
-
-3. **Venture Capital**
-   - Series A: $2M
-   - Equity: 25-30%
-
-4. **Crowdfunding**
-   - Pre-sell premium features
-   - Early access programs
 
 ## Minimal Viable Version (Personal Use)
 
@@ -1130,23 +1051,6 @@ When ready to scale:
    - Performance: Premium
    - Margins: 80%+
 
-### Revenue Model (High Margin)
-
-1. **Pricing Tiers**
-   - Basic: £10/month (90% margin)
-   - Pro: £25/month (92% margin)
-   - Agency: £100/month (95% margin)
-   - Enterprise: Custom (90%+ margin)
-
-2. **Break-even Analysis**
-   - 10 Basic users: £100 revenue
-   - 4 Pro users: £100 revenue
-   - 1 Agency user: £100 revenue
-
-3. **Profit Projection**
-   - 100 users: £1000 revenue (90% margin)
-   - 500 users: £5000 revenue (90% margin)
-   - 1000 users: £10000 revenue (90% margin)
 
 ### Technical Implementation
 
