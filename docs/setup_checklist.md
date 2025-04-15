@@ -24,7 +24,7 @@
 
 3. Development Pipeline
    - [✓] Configure CI pipeline
-   - [ ] Configure CD pipeline
+   - [ ✓] Configure CD pipeline
    - [✓] Set up testing environment
 
 4. Core Features
