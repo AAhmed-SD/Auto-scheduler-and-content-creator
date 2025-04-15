@@ -1,6 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from datetime import datetime, timedelta
+from typing import List, Optional
+import uvicorn
+from .core.storage import storage
+from .core.scheduler import scheduler
+from .core.worker import worker
+from .core.logging_config import loggers
+import asyncio
 
 app = FastAPI(
     title="Auto Scheduler & Content Creator",
@@ -16,6 +24,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Start background worker
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(worker.run())
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await worker.stop()
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -91,4 +108,68 @@ async def root():
             </div>
         </body>
     </html>
-    """ 
+    """
+
+@app.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    project_id: str = None,
+    metadata: Optional[dict] = None
+):
+    """Upload a file"""
+    try:
+        if not project_id:
+            raise HTTPException(status_code=400, detail="Project ID is required")
+
+        file_metadata = await storage.save_file(file, project_id, metadata)
+        return {"status": "success", "data": file_metadata}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/schedule")
+async def schedule_content(
+    content_id: str,
+    scheduled_time: datetime,
+    platform: str,
+    metadata: Optional[dict] = None
+):
+    """Schedule content for posting"""
+    try:
+        job_data = {
+            "content_id": content_id,
+            "platform": platform,
+            "metadata": metadata or {}
+        }
+
+        job_id = await scheduler.schedule_job(job_data, scheduled_time)
+        return {"status": "success", "job_id": job_id}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/jobs")
+async def get_jobs(status: Optional[str] = None):
+    """Get scheduled jobs"""
+    try:
+        # TODO: Implement job retrieval from database
+        return {"status": "success", "jobs": []}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "services": {
+            "storage": "ok",
+            "scheduler": "ok",
+            "worker": "running" if worker.running else "stopped"
+        }
+    }
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 
