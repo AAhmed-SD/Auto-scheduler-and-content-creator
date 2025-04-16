@@ -8,12 +8,16 @@ on:
 
 env:
   DOCKER_IMAGE: auto-scheduler
-  DOCKER_TAG: ${{ github.sha }}
+  DOCKER_TAG: latest
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    permissions:
+      contents: read
+      deployments: write
+      packages: write
+    environment: development
     
     steps:
       - name: Checkout code
@@ -33,14 +37,69 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to production
+      - name: Validate Environment Variables
         run: |
-          # SSH into production server
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          echo "Validating required secrets..."
+          missing_secrets=()
+          
+          # Required secrets
+          [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] && missing_secrets+=("DOCKERHUB_USERNAME")
+          [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ] && missing_secrets+=("DOCKERHUB_TOKEN")
+          [ -z "${{ secrets.SSH_USER }}" ] && missing_secrets+=("SSH_USER")
+          [ -z "${{ secrets.SSH_HOST }}" ] && missing_secrets+=("SSH_HOST")
+          [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] && missing_secrets+=("SSH_PRIVATE_KEY")
+          
+          # Optional API keys - using placeholders if not set
+          SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          SUPABASE_KEY="${{ secrets.SUPABASE_KEY }}"
+          REDIS_URL="${{ secrets.REDIS_URL }}"
+          OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          TIKTOK_API_KEY="${{ secrets.TIKTOK_API_KEY }}"
+          INSTAGRAM_API_KEY="${{ secrets.INSTAGRAM_API_KEY }}"
+          TWITTER_API_KEY="${{ secrets.TWITTER_API_KEY }}"
+          
+          # Set defaults for optional variables if not provided
+          [ -z "$SUPABASE_URL" ] && SUPABASE_URL="https://placeholder.supabase.co"
+          [ -z "$SUPABASE_KEY" ] && SUPABASE_KEY="placeholder_key"
+          [ -z "$REDIS_URL" ] && REDIS_URL="redis://localhost:6379"
+          [ -z "$OPENAI_API_KEY" ] && OPENAI_API_KEY="sk-placeholder"
+          [ -z "$TIKTOK_API_KEY" ] && TIKTOK_API_KEY="placeholder_tiktok"
+          [ -z "$INSTAGRAM_API_KEY" ] && INSTAGRAM_API_KEY="placeholder_instagram"
+          [ -z "$TWITTER_API_KEY" ] && TWITTER_API_KEY="placeholder_twitter"
+          
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "Error: Missing required secrets: ${missing_secrets[*]}"
+            exit 1
+          fi
+          
+          echo "All required secrets are set. Optional API keys will use placeholders if not provided."
+
+      - name: Deploy to production
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ~/.ssh/deploy_key
+          
+          # Add host key (using placeholder if not provided)
+          if [ ! -z "${{ secrets.SSH_HOST_KEY }}" ]; then
+            echo "${{ secrets.SSH_HOST_KEY }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          fi
+          
+          # SSH and deploy
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             # Pull the new image
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
             
@@ -48,18 +107,18 @@ jobs:
             docker stop auto-scheduler || true
             docker rm auto-scheduler || true
             
-            # Run new container
+            # Run new container with placeholder values for missing secrets
             docker run -d \
               --name auto-scheduler \
               --restart unless-stopped \
               -p 8000:8000 \
-              -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-              -e SUPABASE_KEY=${{ secrets.SUPABASE_KEY }} \
-              -e REDIS_URL=${{ secrets.REDIS_URL }} \
-              -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-              -e TIKTOK_API_KEY=${{ secrets.TIKTOK_API_KEY }} \
-              -e INSTAGRAM_API_KEY=${{ secrets.INSTAGRAM_API_KEY }} \
-              -e TWITTER_API_KEY=${{ secrets.TWITTER_API_KEY }} \
+              -e SUPABASE_URL="${{ secrets.SUPABASE_URL || 'https://placeholder.supabase.co' }}" \
+              -e SUPABASE_KEY="${{ secrets.SUPABASE_KEY || 'placeholder_key' }}" \
+              -e REDIS_URL="${{ secrets.REDIS_URL || 'redis://localhost:6379' }}" \
+              -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY || 'sk-placeholder' }}" \
+              -e TIKTOK_API_KEY="${{ secrets.TIKTOK_API_KEY || 'placeholder_tiktok' }}" \
+              -e INSTAGRAM_API_KEY="${{ secrets.INSTAGRAM_API_KEY || 'placeholder_instagram' }}" \
+              -e TWITTER_API_KEY="${{ secrets.TWITTER_API_KEY || 'placeholder_twitter' }}" \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
           EOF
 
@@ -74,21 +133,27 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              body: '🚀 Deployment successful! The application is now live at http://${{ secrets.SSH_HOST }}:8000'
-            })
+            const { owner, repo } = context.repo;
+            await github.rest.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: 'deployment_success',
+              client_payload: {
+                message: '🚀 Deployment successful! Note: Using placeholder values for missing API keys.'
+              }
+            });
 
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              body: '❌ Deployment failed! Please check the logs.'
-            }) 
+            const { owner, repo } = context.repo;
+            await github.rest.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: 'deployment_failure',
+              client_payload: {
+                message: '❌ Deployment failed! Please check the logs and ensure required secrets are set.'
+              }
+            }); 

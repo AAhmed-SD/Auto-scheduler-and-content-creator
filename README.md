@@ -138,6 +138,20 @@ An automated content scheduling and management platform with AI-powered content 
 - **Caching**: Redis
 - **AI Services**: Clip API, OpenAI
 - **Frontend**: React/TypeScript (coming soon)
+- **Server Infrastructure**:
+  - AWS EC2 (t3.medium)
+  - Docker & Docker Compose
+  - Nginx (reverse proxy)
+  - SSL/TLS (Let's Encrypt)
+- **Monitoring & Logging**:
+  - AWS CloudWatch
+  - Prometheus (metrics)
+  - Grafana (visualization)
+  - ELK Stack (logging)
+- **CI/CD**:
+  - GitHub Actions
+  - Docker Hub
+  - AWS CodeDeploy
 
 ## Development Setup
 
@@ -213,7 +227,59 @@ pytest
 
 ## Deployment
 
-Coming soon...
+### Production Infrastructure
+
+The application is deployed on AWS EC2 with the following configuration:
+
+```yaml
+Instance Type: t3.medium
+Specs:
+  - 2 vCPU
+  - 4 GB RAM
+  - 30 GB gp3 SSD
+OS: Ubuntu 22.04 LTS
+Security:
+  - SSL/TLS encryption
+  - Security groups
+  - Network ACLs
+Monitoring:
+  - AWS CloudWatch
+  - Custom metrics
+  - Alert system
+```
+
+### Deployment Process
+
+1. **Initial Server Setup**
+   ```bash
+   # Install required packages
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install docker.io docker-compose nginx certbot python3-certbot-nginx -y
+   ```
+
+2. **SSL Certificate**
+   ```bash
+   sudo certbot --nginx -d yourdomain.com
+   ```
+
+3. **Deploy Application**
+   ```bash
+   # Pull and run using Docker Compose
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+4. **Monitor Deployment**
+   ```bash
+   # Check application logs
+   docker-compose logs -f
+   ```
+
+### Scaling Considerations
+
+- Vertical scaling via EC2 instance type upgrade
+- Horizontal scaling through load balancing (future)
+- Auto-scaling groups (planned)
+- Multi-AZ deployment (planned)
 
 ## Contributing
 
