@@ -1,45 +1,63 @@
-# Use Python 3.11 as base image
-FROM python:3.11
+# Build stage
+FROM python:3.11.8-slim-bookworm AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Copy requirements file
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install requirements
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install packages one by one
-RUN pip install --no-cache-dir fastapi==0.109.2
-RUN pip install --no-cache-dir uvicorn==0.27.1
-RUN pip install --no-cache-dir sqlalchemy==2.0.27
-RUN pip install --no-cache-dir psycopg2-binary==2.9.9
-RUN pip install --no-cache-dir "python-jose[cryptography]==3.3.0"
-RUN pip install --no-cache-dir "passlib[bcrypt]==1.7.4"
-RUN pip install --no-cache-dir python-multipart==0.0.9
-RUN pip install --no-cache-dir redis==5.0.1
-RUN pip install --no-cache-dir python-dotenv==1.0.1
-RUN pip install --no-cache-dir pydantic==2.6.1
-RUN pip install --no-cache-dir pydantic-settings==2.1.0
-RUN pip install --no-cache-dir httpx==0.26.0
-RUN pip install --no-cache-dir aioredis==2.0.1
+# Final stage
+FROM python:3.11.8-slim-bookworm
+
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /app/uploads && \
+    chown -R appuser:appuser /app
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Create necessary directories
-RUN mkdir -p uploads
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
