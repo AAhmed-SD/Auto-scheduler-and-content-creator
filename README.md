@@ -28,7 +28,7 @@ An automated content scheduling and management platform with AI-powered content 
   - Facebook (Posts & Insights)
   - Pinterest (Pins & Boards)
   - Threads (Posts & Threads)
-  - X/Twitter (Posts, Spaces & Trends)
+
 
 - **Platform-Specific Features**
   - Platform-specific content formatting
