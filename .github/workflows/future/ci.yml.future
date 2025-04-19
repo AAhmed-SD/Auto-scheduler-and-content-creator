@@ -35,7 +35,13 @@ jobs:
       run: bandit -r app/ -ll -ii -x tests/
 
   test:
+    needs: lint
+    strategy:
+      matrix:
+        environment: [development, staging]
     runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
+    
     services:
       postgres:
         image: postgres:15
@@ -76,12 +82,14 @@ jobs:
         
     - name: Create test env file
       run: |
-        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/autoscheduler_test" > .env.test
-        echo "REDIS_HOST=localhost" >> .env.test
-        echo "REDIS_PORT=6379" >> .env.test
-        echo "TESTING=true" >> .env.test
-        echo "SECRET_KEY=test_secret_key" >> .env.test
-        echo "JWT_SECRET_KEY=test_jwt_secret" >> .env.test
+        cat << EOF > .env.test
+        DATABASE_URL=postgresql://postgres:postgres@localhost:5432/autoscheduler_test
+        REDIS_HOST=localhost
+        REDIS_PORT=6379
+        TESTING=true
+        SECRET_KEY=test_secret_key
+        JWT_SECRET_KEY=test_jwt_secret
+        EOF
         
     - name: Run tests
       env:
@@ -101,29 +109,43 @@ jobs:
         fail_ci_if_error: true
 
   docker:
+    needs: test
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    environment: development
     steps:
     - uses: actions/checkout@v3
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       
+    - name: Login to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+        username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      
     - name: Build Docker image
-      run: docker build -t autoscheduler -f config/Dockerfile .
+      run: docker build -t ${{ secrets.DOCKER_REGISTRY_URL }}/autoscheduler:${{ github.sha }} -f config/Dockerfile .
       
     - name: Create test env file for Docker
       run: |
-        echo "DATABASE_URL=postgresql://postgres:postgres@postgres:5432/autoscheduler_test" > .env.test
-        echo "REDIS_HOST=redis" >> .env.test
-        echo "REDIS_PORT=6379" >> .env.test
-        echo "TESTING=true" >> .env.test
-        echo "SECRET_KEY=test_secret_key" >> .env.test
-        echo "JWT_SECRET_KEY=test_jwt_secret" >> .env.test
+        cat << EOF > .env.test
+        DATABASE_URL=postgresql://postgres:postgres@postgres:5432/autoscheduler_test
+        REDIS_HOST=redis
+        REDIS_PORT=6379
+        TESTING=true
+        SECRET_KEY=test_secret_key
+        JWT_SECRET_KEY=test_jwt_secret
+        EOF
       
     - name: Run tests in Docker
       run: |
         docker network create test-network
         docker run --network test-network --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=autoscheduler_test -d postgres:15
         docker run --network test-network --name redis -d redis:7
-        docker run --network test-network --env-file .env.test autoscheduler pytest 
+        docker run --network test-network --env-file .env.test ${{ secrets.DOCKER_REGISTRY_URL }}/autoscheduler:${{ github.sha }} pytest
+        
+    - name: Push Docker image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/autoscheduler:${{ github.sha }} 

@@ -1,0 +1,21 @@
+name: Basic Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check file changes
+      run: |
+        echo "Files changed in this PR:"
+        git diff --name-status ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
+        
+    - name: Repository Status
+      run: |
+        echo "Branch: ${{ github.ref }}"
+        echo "Commit: ${{ github.sha }}" 
