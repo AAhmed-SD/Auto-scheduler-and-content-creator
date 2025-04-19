@@ -8,12 +8,18 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, List
 from jose import JWTError, jwt
+import time
+from .logging import get_logger, get_audit_logger
+import ipaddress
 
 load_dotenv()
 
 settings = get_settings()
+
+logger = get_logger(__name__)
+audit_logger = get_audit_logger()
 
 # Password hashing context with stronger settings
 pwd_context = CryptContext(
@@ -160,3 +166,146 @@ def verify_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
+class SecurityMonitor:
+    """Monitor and handle security-related events"""
+    
+    def __init__(self):
+        self.failed_attempts: Dict[str, List[float]] = {}
+        self.blocked_ips: Dict[str, float] = {}
+        self.rate_limits: Dict[str, List[float]] = {}
+        self.block_duration = 3600  # 1 hour
+        self.max_failed_attempts = 5
+        self.rate_limit_window = 60  # 1 minute
+        self.max_requests_per_window = 100
+        
+    def check_ip_block(self, ip: str) -> bool:
+        """Check if an IP is blocked"""
+        if ip in self.blocked_ips:
+            if time.time() - self.blocked_ips[ip] < self.block_duration:
+                return True
+            else:
+                del self.blocked_ips[ip]
+        return False
+        
+    def record_failed_attempt(self, ip: str):
+        """Record a failed authentication attempt"""
+        now = time.time()
+        if ip not in self.failed_attempts:
+            self.failed_attempts[ip] = []
+            
+        self.failed_attempts[ip].append(now)
+        
+        # Remove attempts older than block duration
+        self.failed_attempts[ip] = [
+            t for t in self.failed_attempts[ip]
+            if now - t < self.block_duration
+        ]
+        
+        # Check if IP should be blocked
+        if len(self.failed_attempts[ip]) >= self.max_failed_attempts:
+            self.blocked_ips[ip] = now
+            audit_logger.warning(
+                "IP blocked due to multiple failed attempts",
+                extra={
+                    "ip": ip,
+                    "attempts": len(self.failed_attempts[ip]),
+                    "block_duration": self.block_duration
+                }
+            )
+            
+    def check_rate_limit(self, ip: str) -> bool:
+        """Check if request rate limit is exceeded"""
+        now = time.time()
+        if ip not in self.rate_limits:
+            self.rate_limits[ip] = []
+            
+        # Remove requests outside the window
+        self.rate_limits[ip] = [
+            t for t in self.rate_limits[ip]
+            if now - t < self.rate_limit_window
+        ]
+        
+        # Add current request
+        self.rate_limits[ip].append(now)
+        
+        # Check if rate limit is exceeded
+        if len(self.rate_limits[ip]) > self.max_requests_per_window:
+            audit_logger.warning(
+                "Rate limit exceeded",
+                extra={
+                    "ip": ip,
+                    "requests": len(self.rate_limits[ip]),
+                    "window": self.rate_limit_window
+                }
+            )
+            return False
+            
+        return True
+        
+    def log_security_event(self, event_type: str, details: Dict[str, Any]):
+        """Log a security-related event"""
+        audit_logger.warning(
+            f"Security event: {event_type}",
+            extra=details
+        )
+        
+    def is_suspicious_request(self, request: Request) -> bool:
+        """Check if a request appears suspicious"""
+        suspicious_headers = [
+            "user-agent",
+            "x-forwarded-for",
+            "x-real-ip"
+        ]
+        
+        for header in suspicious_headers:
+            if header in request.headers:
+                value = request.headers[header]
+                # Add your suspicious pattern checks here
+                if "sql" in value.lower() or "script" in value.lower():
+                    return True
+                    
+        return False
+
+class SecurityMiddleware:
+    """Middleware for security monitoring"""
+    
+    def __init__(self, app):
+        self.app = app
+        self.security_monitor = SecurityMonitor()
+        
+    async def __call__(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else None
+        
+        if client_ip:
+            # Check if IP is blocked
+            if self.security_monitor.check_ip_block(client_ip):
+                raise HTTPException(
+                    status_code=403,
+                    detail="IP address blocked due to suspicious activity"
+                )
+                
+            # Check rate limit
+            if not self.security_monitor.check_rate_limit(client_ip):
+                raise HTTPException(
+                    status_code=429,
+                    detail="Too many requests"
+                )
+                
+            # Check for suspicious activity
+            if self.security_monitor.is_suspicious_request(request):
+                self.security_monitor.log_security_event(
+                    "suspicious_request",
+                    {
+                        "ip": client_ip,
+                        "path": request.url.path,
+                        "method": request.method,
+                        "headers": dict(request.headers)
+                    }
+                )
+                
+        response = await call_next(request)
+        return response
+
+# Initialize security monitor
+security_monitor = SecurityMonitor()

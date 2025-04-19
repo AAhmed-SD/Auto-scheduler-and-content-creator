@@ -7,6 +7,33 @@ on:
     branches: [ main ]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black isort mypy bandit
+        
+    - name: Run black
+      run: black . --check
+      
+    - name: Run isort
+      run: isort . --check-only
+      
+    - name: Run mypy
+      run: mypy .
+      
+    - name: Run Bandit
+      run: bandit -r app/
+
   test:
     runs-on: ubuntu-latest
     services:
@@ -49,14 +76,208 @@ jobs:
         
     - name: Run tests
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/autoscheduler_test
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
+        # Database & Cache
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        REDIS_HOST: ${{ secrets.REDIS_HOST }}
+        REDIS_PORT: ${{ secrets.REDIS_PORT }}
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        
+        # Supabase
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        
+        # Social Media APIs
+        INSTAGRAM_USERNAME: ${{ secrets.INSTAGRAM_USERNAME }}
+        INSTAGRAM_PASSWORD: ${{ secrets.INSTAGRAM_PASSWORD }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+        YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+        PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+        PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
+        PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+        LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+        LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+        LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        
+        # AI Services
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        CLIP_API_KEY: ${{ secrets.CLIP_API_KEY }}
+        
+        # Cloud Services
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_CLOUDFRONT_DISTRIBUTION: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION }}
+        AWS_LAMBDA_FUNCTION: ${{ secrets.AWS_LAMBDA_FUNCTION }}
+        AWS_API_GATEWAY: ${{ secrets.AWS_API_GATEWAY }}
+        AWS_EC2_INSTANCE: ${{ secrets.AWS_EC2_INSTANCE }}
+        AWS_RDS_INSTANCE: ${{ secrets.AWS_RDS_INSTANCE }}
+        AWS_ELASTICACHE: ${{ secrets.AWS_ELASTICACHE }}
+        
+        # Terraform State
+        TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
+        TERRAFORM_STATE_KEY: ${{ secrets.TERRAFORM_STATE_KEY }}
+        TERRAFORM_STATE_REGION: ${{ secrets.TERRAFORM_STATE_REGION }}
+        
+        # Monitoring & Logging
+        AWS_CLOUDWATCH_GROUP: ${{ secrets.AWS_CLOUDWATCH_GROUP }}
+        AWS_CLOUDWATCH_STREAM: ${{ secrets.AWS_CLOUDWATCH_STREAM }}
+        PROMETHEUS_ENDPOINT: ${{ secrets.PROMETHEUS_ENDPOINT }}
+        GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+        
+        # Container Registry
+        DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+        DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+        DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+        
+        # CDN & Edge Services
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        
+        # Microservices
+        CONTENT_SERVICE_URL: ${{ secrets.CONTENT_SERVICE_URL }}
+        SCHEDULING_SERVICE_URL: ${{ secrets.SCHEDULING_SERVICE_URL }}
+        ANALYTICS_SERVICE_URL: ${{ secrets.ANALYTICS_SERVICE_URL }}
+        NOTIFICATION_SERVICE_URL: ${{ secrets.NOTIFICATION_SERVICE_URL }}
+        USER_SERVICE_URL: ${{ secrets.USER_SERVICE_URL }}
+        AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+        
+        # Security & Authentication
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        
+        # Email Service
+        EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+        EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        
+        # File Storage
+        STORAGE_ACCESS_KEY: ${{ secrets.STORAGE_ACCESS_KEY }}
+        STORAGE_SECRET_KEY: ${{ secrets.STORAGE_SECRET_KEY }}
+        STORAGE_BUCKET_NAME: ${{ secrets.STORAGE_BUCKET_NAME }}
+        STORAGE_REGION: ${{ secrets.STORAGE_REGION }}
+        
+        # Monitoring
+        MONITORING_API_KEY: ${{ secrets.MONITORING_API_KEY }}
+        
+        # Testing
+        TESTING: true
       run: |
-        pytest --cov=app --cov-report=xml
+        pytest --cov=app --cov-report=xml --cov-fail-under=80
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true 
+        fail_ci_if_error: true
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Build and test Docker image
+      env:
+        # Database & Cache
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        REDIS_HOST: ${{ secrets.REDIS_HOST }}
+        REDIS_PORT: ${{ secrets.REDIS_PORT }}
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        
+        # Supabase
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        
+        # Social Media APIs
+        INSTAGRAM_USERNAME: ${{ secrets.INSTAGRAM_USERNAME }}
+        INSTAGRAM_PASSWORD: ${{ secrets.INSTAGRAM_PASSWORD }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+        YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+        PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+        PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
+        PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+        LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+        LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+        LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        
+        # AI Services
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        CLIP_API_KEY: ${{ secrets.CLIP_API_KEY }}
+        
+        # Cloud Services
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_CLOUDFRONT_DISTRIBUTION: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION }}
+        AWS_LAMBDA_FUNCTION: ${{ secrets.AWS_LAMBDA_FUNCTION }}
+        AWS_API_GATEWAY: ${{ secrets.AWS_API_GATEWAY }}
+        AWS_EC2_INSTANCE: ${{ secrets.AWS_EC2_INSTANCE }}
+        AWS_RDS_INSTANCE: ${{ secrets.AWS_RDS_INSTANCE }}
+        AWS_ELASTICACHE: ${{ secrets.AWS_ELASTICACHE }}
+        
+        # Terraform State
+        TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
+        TERRAFORM_STATE_KEY: ${{ secrets.TERRAFORM_STATE_KEY }}
+        TERRAFORM_STATE_REGION: ${{ secrets.TERRAFORM_STATE_REGION }}
+        
+        # Monitoring & Logging
+        AWS_CLOUDWATCH_GROUP: ${{ secrets.AWS_CLOUDWATCH_GROUP }}
+        AWS_CLOUDWATCH_STREAM: ${{ secrets.AWS_CLOUDWATCH_STREAM }}
+        PROMETHEUS_ENDPOINT: ${{ secrets.PROMETHEUS_ENDPOINT }}
+        GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+        
+        # Container Registry
+        DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+        DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+        DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+        
+        # CDN & Edge Services
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        
+        # Microservices
+        CONTENT_SERVICE_URL: ${{ secrets.CONTENT_SERVICE_URL }}
+        SCHEDULING_SERVICE_URL: ${{ secrets.SCHEDULING_SERVICE_URL }}
+        ANALYTICS_SERVICE_URL: ${{ secrets.ANALYTICS_SERVICE_URL }}
+        NOTIFICATION_SERVICE_URL: ${{ secrets.NOTIFICATION_SERVICE_URL }}
+        USER_SERVICE_URL: ${{ secrets.USER_SERVICE_URL }}
+        AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+        
+        # Security & Authentication
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        
+        # Email Service
+        EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+        EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        
+        # File Storage
+        STORAGE_ACCESS_KEY: ${{ secrets.STORAGE_ACCESS_KEY }}
+        STORAGE_SECRET_KEY: ${{ secrets.STORAGE_SECRET_KEY }}
+        STORAGE_BUCKET_NAME: ${{ secrets.STORAGE_BUCKET_NAME }}
+        STORAGE_REGION: ${{ secrets.STORAGE_REGION }}
+        
+        # Monitoring
+        MONITORING_API_KEY: ${{ secrets.MONITORING_API_KEY }}
+      run: |
+        docker build -t autoscheduler .
+        docker run --rm autoscheduler pytest 

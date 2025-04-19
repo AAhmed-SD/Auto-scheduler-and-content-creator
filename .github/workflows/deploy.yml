@@ -2,158 +2,86 @@ name: Deploy to Production
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: auto-scheduler
-  DOCKER_TAG: latest
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: auto-scheduler
+  ECS_SERVICE: auto-scheduler-service
+  ECS_CLUSTER: auto-scheduler-cluster
+  ECS_TASK_DEFINITION: auto-scheduler-task
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-      packages: write
-    environment: development
-    
+    environment: production
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Validate Environment Variables
-        run: |
-          echo "Validating required secrets..."
-          missing_secrets=()
-          
-          # Required secrets
-          [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] && missing_secrets+=("DOCKERHUB_USERNAME")
-          [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ] && missing_secrets+=("DOCKERHUB_TOKEN")
-          [ -z "${{ secrets.SSH_USER }}" ] && missing_secrets+=("SSH_USER")
-          [ -z "${{ secrets.SSH_HOST }}" ] && missing_secrets+=("SSH_HOST")
-          [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] && missing_secrets+=("SSH_PRIVATE_KEY")
-          
-          # Optional API keys - using placeholders if not set
-          SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
-          SUPABASE_KEY="${{ secrets.SUPABASE_KEY }}"
-          REDIS_URL="${{ secrets.REDIS_URL }}"
-          OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          TIKTOK_API_KEY="${{ secrets.TIKTOK_API_KEY }}"
-          INSTAGRAM_API_KEY="${{ secrets.INSTAGRAM_API_KEY }}"
-          TWITTER_API_KEY="${{ secrets.TWITTER_API_KEY }}"
-          
-          # Set defaults for optional variables if not provided
-          [ -z "$SUPABASE_URL" ] && SUPABASE_URL="https://placeholder.supabase.co"
-          [ -z "$SUPABASE_KEY" ] && SUPABASE_KEY="placeholder_key"
-          [ -z "$REDIS_URL" ] && REDIS_URL="redis://localhost:6379"
-          [ -z "$OPENAI_API_KEY" ] && OPENAI_API_KEY="sk-placeholder"
-          [ -z "$TIKTOK_API_KEY" ] && TIKTOK_API_KEY="placeholder_tiktok"
-          [ -z "$INSTAGRAM_API_KEY" ] && INSTAGRAM_API_KEY="placeholder_instagram"
-          [ -z "$TWITTER_API_KEY" ] && TWITTER_API_KEY="placeholder_twitter"
-          
-          if [ ${#missing_secrets[@]} -ne 0 ]; then
-            echo "Error: Missing required secrets: ${missing_secrets[*]}"
-            exit 1
-          fi
-          
-          echo "All required secrets are set. Optional API keys will use placeholders if not provided."
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+        --query taskDefinition > task-definition.json
 
-      - name: Deploy to production
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          # Setup SSH key
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ~/.ssh/deploy_key
-          
-          # Add host key (using placeholder if not provided)
-          if [ ! -z "${{ secrets.SSH_HOST_KEY }}" ]; then
-            echo "${{ secrets.SSH_HOST_KEY }}" >> ~/.ssh/known_hosts
-          else
-            ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-          fi
-          
-          # SSH and deploy
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            # Pull the new image
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-            
-            # Stop and remove old container
-            docker stop auto-scheduler || true
-            docker rm auto-scheduler || true
-            
-            # Run new container with placeholder values for missing secrets
-            docker run -d \
-              --name auto-scheduler \
-              --restart unless-stopped \
-              -p 8000:8000 \
-              -e SUPABASE_URL="${{ secrets.SUPABASE_URL || 'https://placeholder.supabase.co' }}" \
-              -e SUPABASE_KEY="${{ secrets.SUPABASE_KEY || 'placeholder_key' }}" \
-              -e REDIS_URL="${{ secrets.REDIS_URL || 'redis://localhost:6379' }}" \
-              -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY || 'sk-placeholder' }}" \
-              -e TIKTOK_API_KEY="${{ secrets.TIKTOK_API_KEY || 'placeholder_tiktok' }}" \
-              -e INSTAGRAM_API_KEY="${{ secrets.INSTAGRAM_API_KEY || 'placeholder_instagram' }}" \
-              -e TWITTER_API_KEY="${{ secrets.TWITTER_API_KEY || 'placeholder_twitter' }}" \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-          EOF
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: auto-scheduler
+        image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Health check
-        run: |
-          # Wait for the application to start
-          sleep 30
-          curl -f http://${{ secrets.SSH_HOST }}:8000/health || exit 1
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
 
-      - name: Notify on success
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            await github.rest.repos.createDispatchEvent({
-              owner,
-              repo,
-              event_type: 'deployment_success',
-              client_payload: {
-                message: '🚀 Deployment successful! Note: Using placeholder values for missing API keys.'
-              }
-            });
+    - name: Get secrets from AWS Secrets Manager
+      id: get-secrets
+      run: |
+        SUPABASE_URL=$(aws secretsmanager get-secret-value --secret-id supabase-url --query SecretString --output text)
+        SUPABASE_KEY=$(aws secretsmanager get-secret-value --secret-id supabase-key --query SecretString --output text)
+        OPENAI_API_KEY=$(aws secretsmanager get-secret-value --secret-id openai-api-key --query SecretString --output text)
+        CLIP_API_KEY=$(aws secretsmanager get-secret-value --secret-id clip-api-key --query SecretString --output text)
+        
+        echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+        echo "SUPABASE_KEY=$SUPABASE_KEY" >> $GITHUB_ENV
+        echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> $GITHUB_ENV
+        echo "CLIP_API_KEY=$CLIP_API_KEY" >> $GITHUB_ENV
 
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            await github.rest.repos.createDispatchEvent({
-              owner,
-              repo,
-              event_type: 'deployment_failure',
-              client_payload: {
-                message: '❌ Deployment failed! Please check the logs and ensure required secrets are set.'
-              }
-            }); 
+    - name: Update environment variables
+      run: |
+        aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} \
+        --service ${{ env.ECS_SERVICE }} \
+        --task-definition ${{ steps.task-def.outputs.task-definition-arn }} \
+        --force-new-deployment
+
+    - name: Verify deployment
+      run: |
+        echo "Deployment completed successfully"
+        echo "New image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" 
