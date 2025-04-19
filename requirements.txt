@@ -34,14 +34,14 @@ types-python-jose==3.3.4.20240106
 
 # API Clients
 requests==2.31.0
-instagrapi==2.0.0
-google-api-python-client==2.108.0
+instagrapi==2.0.1
+google-api-python-client==2.118.0
 
 # Image Processing
 pillow==10.2.0
 
 # Caching & Queue
-aioredis==2.0.1
+redis==5.0.1
 celery==5.3.6
 
 # Monitoring & Logging
