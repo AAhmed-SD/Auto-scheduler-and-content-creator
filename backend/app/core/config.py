@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Auto Scheduler & Content Creator"
     APP_ENV: str = "development"
+    APP_VERSION: str = "1.0.0"
+    ENVIRONMENT: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str = "your-secret-key-here"
     API_V1_STR: str = "/api/v1"
@@ -39,6 +41,13 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_URL: Optional[str] = None
     SUPABASE_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = "your_supabase_jwt_secret"
+    
+    # Storage
+    STORAGE_URL: Optional[str] = "your_storage_url"
+    STORAGE_BUCKET: Optional[str] = "content-bucket"
+    ALLOWED_FILE_TYPES: str = "image/jpeg,image/png,image/gif,video/mp4"
+    MAX_FILE_SIZE: int = 10485760  # 10MB
     
     # AWS
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -133,6 +142,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"  # Allow extra fields
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -148,9 +158,6 @@ class Settings(BaseSettings):
         """Validate required settings"""
         required_settings = [
             "SECRET_KEY",
-            "FIREBASE_PROJECT_ID",
-            "FIREBASE_PRIVATE_KEY",
-            "FIREBASE_CLIENT_EMAIL",
             "POSTGRES_PASSWORD",
         ]
         

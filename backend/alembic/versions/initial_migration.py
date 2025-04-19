@@ -18,12 +18,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
-    op.execute("CREATE TYPE contenttype AS ENUM ('video', 'image', 'carousel')")
-    op.execute(
-        "CREATE TYPE contentstatus AS ENUM ('draft', 'generating', 'ready', 'scheduled', 'published', 'failed')"
-    )
-
     # Create users table
     op.create_table(
         "users",
@@ -57,12 +51,12 @@ def upgrade() -> None:
         sa.Column("description", sa.String(), nullable=True),
         sa.Column(
             "content_type",
-            postgresql.ENUM("video", "image", "carousel", name="contenttype"),
+            sa.Enum("video", "image", "carousel", name="contenttype"),
             nullable=False,
         ),
         sa.Column(
             "status",
-            postgresql.ENUM(
+            sa.Enum(
                 "draft",
                 "generating",
                 "ready",
@@ -77,7 +71,7 @@ def upgrade() -> None:
         sa.Column("style_template", sa.JSON(), nullable=True),
         sa.Column("media_url", sa.String(), nullable=True),
         sa.Column("thumbnail_url", sa.String(), nullable=True),
-        sa.Column("metadata", sa.JSON(), nullable=True),
+        sa.Column("content_metadata", sa.JSON(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -135,5 +129,5 @@ def downgrade() -> None:
     op.drop_table("users")
 
     # Drop enum types
-    op.execute("DROP TYPE contentstatus")
-    op.execute("DROP TYPE contenttype")
+    op.execute("DROP TYPE IF EXISTS contentstatus")
+    op.execute("DROP TYPE IF EXISTS contenttype")

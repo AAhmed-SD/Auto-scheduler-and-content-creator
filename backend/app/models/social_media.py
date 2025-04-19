@@ -31,7 +31,7 @@ class SocialMediaPost(Base):
     published_time = Column(DateTime)
     platform_post_id = Column(String)
     platform_url = Column(String)
-    metadata = Column(JSON, default={})
+    post_metadata = Column(JSON, default={})
     
     # Relationships
     content = relationship("Content", back_populates="social_media_posts")

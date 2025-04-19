@@ -1,12 +1,10 @@
 from fastapi import APIRouter
-from . import auth, users, projects, content, analytics
+from . import mock_routes
 
 # Create main router
 router = APIRouter()
 
-# Include all sub-routers
-router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-router.include_router(users.router, prefix="/users", tags=["Users"])
-router.include_router(projects.router, prefix="/projects", tags=["Projects"])
-router.include_router(content.router, prefix="/content", tags=["Content"])
-router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+# Include mock routes
+router.include_router(mock_routes.router)
+
+# This file is intentionally left empty to mark the directory as a Python package
