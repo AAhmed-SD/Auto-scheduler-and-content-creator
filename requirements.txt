@@ -1,4 +1,4 @@
-fastapi==0.109.2
+fastapi==0.115.12
 uvicorn[standard]==0.27.1
 sqlalchemy==2.0.27
 psycopg2-binary==2.9.9
@@ -50,4 +50,11 @@ python-json-logger==2.0.7
 
 # Security
 python-multipart==0.0.9
-python-magic==0.4.27 
+python-magic==0.4.27
+fastapi-limiter==0.1.5
+secure==0.3.0
+cryptography==42.0.2
+pyjwt==2.8.0
+bcrypt==4.1.2
+python-jose[cryptography]==3.3.0
+jinja2==3.1.3 
