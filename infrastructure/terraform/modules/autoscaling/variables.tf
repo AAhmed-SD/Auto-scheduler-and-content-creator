@@ -59,12 +59,12 @@ variable "db_password" {
 }
 
 variable "private_subnet_ids" {
-  description = "List of private subnet IDs for ECS tasks"
+  description = "List of private subnet IDs"
   type        = list(string)
 }
 
 variable "vpc_id" {
-  description = "VPC ID for security groups"
+  description = "ID of the VPC"
   type        = string
 }
 
@@ -147,4 +147,73 @@ variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "environment" {
+  description = "Environment name (e.g., development, production)"
+  type        = string
+}
+
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  default     = "admin"
+}
+
+variable "rds_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "rds_allocated_storage" {
+  description = "Allocated storage for RDS in GB"
+  type        = number
+  default     = 20
+}
+
+variable "redis_node_type" {
+  description = "Redis node type"
+  type        = string
+  default     = "cache.t3.micro"
+}
+
+variable "container_port" {
+  description = "Port exposed by the container"
+  type        = number
+  default     = 8000
+}
+
+variable "container_cpu" {
+  description = "CPU units for the container"
+  type        = number
+  default     = 256
+}
+
+variable "container_memory" {
+  description = "Memory limit for the container in MiB"
+  type        = number
+  default     = 512
+}
+
+variable "container_image" {
+  description = "Docker image for the container"
+  type        = string
+  default     = "nginx:latest"
+}
+
+variable "desired_count" {
+  description = "Desired number of containers"
+  type        = number
+  default     = 1
+}
+
+variable "ecs_task_execution_role_arn" {
+  description = "ARN of the ECS task execution role"
+  type        = string
+}
+
+variable "ecs_task_role_arn" {
+  description = "ARN of the ECS task role"
+  type        = string
 } 

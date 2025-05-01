@@ -1,48 +1,71 @@
-from redis import Redis
-from typing import Optional
-import json
+from typing import Optional, Any
+import redis
 import os
-from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 class RedisConfig:
     def __init__(self):
-        self.redis_host = os.getenv('REDIS_HOST', 'localhost')
-        self.redis_port = int(os.getenv('REDIS_PORT', 6379))
-        self.redis_password = os.getenv('REDIS_PASSWORD', None)
-        self.redis_db = int(os.getenv('REDIS_DB', 0))
-        
-        self.redis_client = Redis(
-            host=self.redis_host,
-            port=self.redis_port,
-            password=self.redis_password,
-            db=self.redis_db,
-            decode_responses=True
+        """Initialize Redis client with configuration from environment variables."""
+        self.redis_client = redis.Redis(
+            host=os.getenv('REDIS_HOST', 'localhost'),
+            port=int(os.getenv('REDIS_PORT', 6379)),
+            password=os.getenv('REDIS_PASSWORD', None),
+            db=0,
+            decode_responses=True,
+            socket_timeout=5,
+            retry_on_timeout=True
         )
+        self._test_connection()
 
-    def get(self, key: str) -> Optional[dict]:
-        """Get value from Redis cache"""
-        value = self.redis_client.get(key)
-        return json.loads(value) if value else None
+    def _test_connection(self) -> None:
+        """Test Redis connection and raise an error if connection fails."""
+        try:
+            self.redis_client.ping()
+        except redis.ConnectionError as e:
+            raise ConnectionError(f"Failed to connect to Redis: {str(e)}")
 
-    def set(self, key: str, value: dict, expire: int = 3600) -> bool:
-        """Set value in Redis cache with expiration"""
-        return self.redis_client.setex(
-            key,
-            timedelta(seconds=expire),
-            json.dumps(value)
-        )
+    def get(self, key: str) -> Optional[Any]:
+        """Get value from Redis."""
+        try:
+            return self.redis_client.get(key)
+        except redis.RedisError as e:
+            print(f"Error getting key {key} from Redis: {str(e)}")
+            return None
+
+    def set(self, key: str, value: Any, expiration: int = None) -> bool:
+        """Set value in Redis with optional expiration in seconds."""
+        try:
+            return self.redis_client.set(key, value, ex=expiration)
+        except redis.RedisError as e:
+            print(f"Error setting key {key} in Redis: {str(e)}")
+            return False
 
     def delete(self, key: str) -> bool:
-        """Delete value from Redis cache"""
-        return bool(self.redis_client.delete(key))
+        """Delete key from Redis."""
+        try:
+            return bool(self.redis_client.delete(key))
+        except redis.RedisError as e:
+            print(f"Error deleting key {key} from Redis: {str(e)}")
+            return False
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in Redis cache"""
-        return bool(self.redis_client.exists(key))
+        """Check if key exists in Redis."""
+        try:
+            return bool(self.redis_client.exists(key))
+        except redis.RedisError as e:
+            print(f"Error checking existence of key {key} in Redis: {str(e)}")
+            return False
 
     def clear_cache(self) -> bool:
-        """Clear all cache"""
-        return bool(self.redis_client.flushdb())
+        """Clear all keys in the current database."""
+        try:
+            return bool(self.redis_client.flushdb())
+        except redis.RedisError as e:
+            print(f"Error clearing Redis cache: {str(e)}")
+            return False
 
-# Create global Redis instance
-redis = RedisConfig() 
+# Create a singleton instance
+redis_client = RedisConfig() 

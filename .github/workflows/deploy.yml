@@ -1,0 +1,136 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'development' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'development' }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.0"
+    
+    - name: Terraform Init
+      run: |
+        cd infrastructure/terraform
+        terraform init \
+          -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+          -backend-config="key=${{ secrets.TERRAFORM_STATE_KEY }}" \
+          -backend-config="region=us-east-1"
+    
+    - name: Build and Push Docker image
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+        ECR_REGISTRY: 794010617385.dkr.ecr.us-east-1.amazonaws.com
+      run: |
+        docker build -t $ECR_REGISTRY/autoscheduler:$IMAGE_TAG -f config/Dockerfile .
+        docker push $ECR_REGISTRY/autoscheduler:$IMAGE_TAG
+    
+    - name: Create environment file
+      run: |
+        cat << EOF > .env.${{ github.event.inputs.environment || 'development' }}
+        # Database & Cache
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        REDIS_HOST=${{ secrets.REDIS_HOST }}
+        REDIS_PORT=${{ secrets.REDIS_PORT }}
+        REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+        
+        # Supabase
+        SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+        SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
+        
+        # Social Media APIs
+        INSTAGRAM_USERNAME=${{ secrets.INSTAGRAM_USERNAME }}
+        INSTAGRAM_PASSWORD=${{ secrets.INSTAGRAM_PASSWORD }}
+        GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+        GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+        
+        # AI Services
+        OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        CLIP_API_KEY=${{ secrets.CLIP_API_KEY }}
+        
+        # Security & Authentication
+        JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+        SECRET_KEY=${{ secrets.SECRET_KEY }}
+        
+        # Email Service
+        EMAIL_HOST=${{ secrets.EMAIL_HOST }}
+        EMAIL_PORT=${{ secrets.EMAIL_PORT }}
+        EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
+        
+        # Monitoring
+        MONITORING_API_KEY=${{ secrets.MONITORING_API_KEY }}
+        EOF
+    
+    - name: Deploy Infrastructure
+      env:
+        TF_VAR_environment: ${{ github.event.inputs.environment || 'development' }}
+        TF_VAR_image_tag: ${{ github.sha }}
+        TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      run: |
+        cd infrastructure/terraform
+        terraform workspace select $TF_VAR_environment || terraform workspace new $TF_VAR_environment
+        terraform plan -out=tfplan
+        terraform apply -auto-approve tfplan
+    
+    - name: Update ECS Service
+      run: |
+        aws ecs update-service \
+          --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
+          --service ${{ secrets.ECS_SERVICE_NAME }} \
+          --force-new-deployment
+    
+    - name: Configure CloudWatch Alarms
+      run: |
+        aws cloudwatch put-metric-alarm \
+          --alarm-name "${{ github.event.inputs.environment || 'development' }}-cpu-utilization" \
+          --alarm-description "CPU utilization exceeded threshold" \
+          --metric-name CPUUtilization \
+          --namespace AWS/ECS \
+          --statistic Average \
+          --period 300 \
+          --threshold 80 \
+          --comparison-operator GreaterThanThreshold \
+          --evaluation-periods 2 \
+          --dimensions Name=ClusterName,Value=${{ secrets.ECS_CLUSTER_NAME }} Name=ServiceName,Value=${{ secrets.ECS_SERVICE_NAME }}
+    
+    - name: Notify Deployment Status
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 

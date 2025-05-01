@@ -2,33 +2,35 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.0"
+      version = "~> 5.0"
     }
   }
   required_version = ">= 1.0.0"
 }
 
+locals {
+  name = "${var.environment}-content-scheduler"
+  tags = merge(var.tags, {
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  })
+}
+
 provider "aws" {
-  region = "us-east-1"  # Change this to your preferred region
+  region = var.region
 }
 
-# Import the auto-scaling configuration
-module "autoscaling" {
-  source = "./modules/autoscaling"
+data "aws_region" "current" {}
 
-  min_capacity        = var.min_capacity
-  max_capacity        = var.max_capacity
-  cpu_target_value    = var.cpu_target_value
-  memory_target_value = var.memory_target_value
-  scale_in_cooldown   = var.scale_in_cooldown
-  scale_out_cooldown  = var.scale_out_cooldown
-  rds_max_storage     = var.rds_max_storage
-  redis_node_groups   = var.redis_node_groups
-  redis_replicas      = var.redis_replicas
-  db_password         = var.db_password
+# Outputs
+output "vpc_id" {
+  value = module.vpc.vpc_id
 }
 
-# Output the auto-scaling configuration details
+output "private_subnet_ids" {
+  value = module.vpc.private_subnet_ids
+}
+
 output "ecs_service_name" {
   value = module.autoscaling.ecs_service_name
 }

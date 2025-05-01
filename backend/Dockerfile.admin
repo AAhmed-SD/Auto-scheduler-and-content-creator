@@ -20,7 +20,7 @@ COPY . .
 
 # Create health check script
 RUN echo '#!/bin/sh\n\
-nc -z localhost 8000 || exit 1\n\
+nc -z localhost 8001 || exit 1\n\
 nc -z db 5432 || exit 1\n\
 nc -z redis 6379 || exit 1\n\
 exit 0' > /usr/local/bin/healthcheck.sh && \
@@ -31,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD /usr/local/bin/healthcheck.sh
 
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"] 
+CMD ["uvicorn", "app.admin:app", "--host", "0.0.0.0", "--port", "8001", "--log-level", "info"] 

@@ -10,15 +10,37 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    # Application
-    APP_NAME: str = "Auto Scheduler & Content Creator"
-    APP_ENV: str = "development"
-    APP_VERSION: str = "1.0.0"
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
-    SECRET_KEY: str = "your-secret-key-here"
-    API_V1_STR: str = "/api/v1"
-    
+    # Application Settings
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    APP_NAME: str = os.getenv("APP_NAME", "Auto Scheduler & Content Creator")
+    APP_VERSION: str = os.getenv("APP_VERSION", "1.0.0")
+
+    # API Settings
+    API_V1_STR: str = os.getenv("API_V1_STR", "/api/v1")
+    ADMIN_PORT: int = int(os.getenv("ADMIN_PORT", "8001"))
+
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+    # Database
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "db")
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "autoscheduler")
+
+    # Redis
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "redispass")
+    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
+    REDIS_URL: str = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+    # Rate Limiting
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
+    RATE_LIMIT_PER_HOUR: int = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
+
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
     
@@ -31,7 +53,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
     
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/autoscheduler"
+    DATABASE_URL: str = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@db:5432/{POSTGRES_DB}"
     
     # Redis
     REDIS_HOST: str = "localhost"
@@ -70,7 +92,6 @@ class Settings(BaseSettings):
     # Security
     JWT_SECRET: str = "your-jwt-secret"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # API Settings
@@ -80,10 +101,6 @@ class Settings(BaseSettings):
     API_KEY: str = os.getenv("API_KEY", "")
 
     # Database
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "autoscheduler")
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
     # Security
@@ -111,10 +128,6 @@ class Settings(BaseSettings):
 
     # Social Media API Keys
     YOUTUBE_API_KEY: Optional[str] = os.getenv("YOUTUBE_API_KEY")
-
-    # Rate Limiting
-    RATE_LIMIT_PER_MINUTE: int = 60
-    RATE_LIMIT_PER_HOUR: int = 1000
 
     # Admin
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
