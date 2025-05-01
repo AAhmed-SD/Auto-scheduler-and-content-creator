@@ -23,7 +23,7 @@ pytest-mock==3.12.0
 coverage==7.4.3
 
 # Linting and Type Checking
-black==24.1.1
+black==24.3.0
 isort==5.13.2
 mypy==1.8.0
 bandit==1.7.7
@@ -33,12 +33,12 @@ types-requests==2.31.0.20240125
 types-python-jose==3.3.4.20240106
 
 # API Clients
-requests==2.31.0
+requests==2.32.0
 instagrapi==2.0.1
 google-api-python-client==2.118.0
 
 # Image Processing
-pillow==10.2.0
+pillow==10.3.0
 
 # Caching & Queue
 redis==5.0.1
@@ -53,7 +53,7 @@ python-multipart==0.0.9
 python-magic==0.4.27
 fastapi-limiter==0.1.5
 secure==0.3.0
-cryptography==42.0.2
+cryptography==44.0.1
 pyjwt==2.8.0
 bcrypt==4.1.2
 python-jose[cryptography]==3.3.0
