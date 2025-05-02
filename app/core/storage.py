@@ -1,25 +1,36 @@
-import os
-from fastapi import UploadFile
-from typing import Optional, Dict, Any
-import magic
-from datetime import datetime
-import shutil
-from pathlib import Path
+"""Storage configuration module."""
+
 import logging
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import magic
+from fastapi import UploadFile
+
 from .logging_config import loggers
 
-logger = loggers['root']
+logger = loggers["root"]
 
-class ContentStorage:
+
+class Storage:
+    """Storage class for managing file uploads."""
+
     def __init__(self):
-        self.upload_dir = os.getenv('UPLOAD_FOLDER', 'uploads')
+        """Initialize storage."""
+        self.upload_dir = "uploads"
+        if not os.path.exists(self.upload_dir):
+            os.makedirs(self.upload_dir)
         self.allowed_extensions = {
-            'image': {'png', 'jpg', 'jpeg', 'gif', 'webp'},
-            'video': {'mp4', 'mov', 'avi', 'mkv', 'webm'},
-            'audio': {'mp3', 'wav', 'ogg', 'm4a'}
+            "image": {"png", "jpg", "jpeg", "gif", "webp"},
+            "video": {"mp4", "mov", "avi", "mkv", "webm"},
+            "audio": {"mp3", "wav", "ogg", "m4a"},
         }
-        self.max_file_size = int(os.getenv('MAX_CONTENT_LENGTH', 16777216))  # 16MB default
-        self._ensure_upload_dir()
+        self.max_file_size = int(
+            os.getenv("MAX_CONTENT_LENGTH", 16777216)
+        )  # 16MB default
 
     def _ensure_upload_dir(self):
         """Ensure upload directory exists"""
@@ -27,69 +38,57 @@ class ContentStorage:
 
     def _get_file_extension(self, filename: str) -> str:
         """Get file extension from filename"""
-        return filename.split('.')[-1].lower()
+        return filename.split(".")[-1].lower()
 
     def _is_allowed_file(self, file: UploadFile) -> bool:
         """Check if file type is allowed"""
         try:
             # Get file extension
             ext = self._get_file_extension(file.filename)
-            
+
             # Get file type using python-magic
             file_type = magic.from_buffer(file.file.read(1024), mime=True)
             file.file.seek(0)  # Reset file pointer
-            
+
             # Check if extension matches file type
-            if file_type.startswith('image/'):
-                return ext in self.allowed_extensions['image']
-            elif file_type.startswith('video/'):
-                return ext in self.allowed_extensions['video']
-            elif file_type.startswith('audio/'):
-                return ext in self.allowed_extensions['audio']
-            
+            if file_type.startswith("image/"):
+                return ext in self.allowed_extensions["image"]
+            elif file_type.startswith("video/"):
+                return ext in self.allowed_extensions["video"]
+            elif file_type.startswith("audio/"):
+                return ext in self.allowed_extensions["audio"]
+
             return False
         except Exception as e:
             logger.error(f"Error checking file type: {str(e)}")
             return False
 
-    async def save_file(self, file: UploadFile, project_id: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Save uploaded file with metadata"""
+    async def upload_file(
+        self, file: UploadFile, metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Upload a file with optional metadata."""
         try:
-            # Validate file
-            if not self._is_allowed_file(file):
-                raise ValueError("File type not allowed")
-
-            # Create project directory
-            project_dir = os.path.join(self.upload_dir, project_id)
-            Path(project_dir).mkdir(parents=True, exist_ok=True)
-
-            # Generate unique filename
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            # Create a unique filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{timestamp}_{file.filename}"
-            file_path = os.path.join(project_dir, filename)
+            file_path = os.path.join(self.upload_dir, filename)
 
-            # Save file
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            # Save the file
+            content = await file.read()
+            with open(file_path, "wb") as f:
+                f.write(content)
 
-            # Prepare metadata
-            file_metadata = {
-                'filename': filename,
-                'original_name': file.filename,
-                'content_type': file.content_type,
-                'size': os.path.getsize(file_path),
-                'path': file_path,
-                'project_id': project_id,
-                'created_at': datetime.now().isoformat(),
-                **(metadata or {})
+            # Return file info
+            return {
+                "filename": filename,
+                "original_name": file.filename,
+                "content_type": file.content_type,
+                "size": len(content),
+                "path": file_path,
+                "metadata": metadata or {},
             }
-
-            logger.info(f"File saved successfully: {filename}")
-            return file_metadata
-
         except Exception as e:
-            logger.error(f"Error saving file: {str(e)}")
-            raise
+            raise RuntimeError(f"Error uploading file: {str(e)}") from e
 
     def delete_file(self, file_path: str) -> bool:
         """Delete file from storage"""
@@ -108,5 +107,6 @@ class ContentStorage:
         file_path = os.path.join(self.upload_dir, project_id, filename)
         return file_path if os.path.exists(file_path) else None
 
+
 # Create global storage instance
-storage = ContentStorage() 
+storage = Storage()

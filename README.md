@@ -1,439 +1,194 @@
-# Auto-Scheduler & Content Creator
+# Auto-scheduler and Content Creator
 
-An automated content scheduling and management platform with AI-powered content generation capabilities.
+An AI-powered platform for intelligent content scheduling and management, built with FastAPI and React.
 
 ## Features
 
-### Core Content Management
-- **Content Creation & Templates**
-  - AI-Powered content generation
-  - Customizable content templates
-  - Multi-format content support (text, image, video)
-  - Content versioning and history
-  - Content categorization and tagging
-  - Content approval workflows
-
-- **Media Management**
-  - Asset library with version control
-  - Media processing and optimization
-  - Multi-format support (images, videos, GIFs)
-  - Asset categorization and organization
-  - Usage tracking and analytics
-
-### Social Media Integration
-- **Multi-Platform Support**
-  - Instagram (Posts & Stories)
-  - TikTok (Videos & Trends)
-  - LinkedIn (Posts & Company Pages)
-  - Facebook (Posts & Insights)
-  - Pinterest (Pins & Boards)
-  - Threads (Posts & Threads)
-
-
-- **Platform-Specific Features**
-  - Platform-specific content formatting
-  - Hashtag management
-  - Mention tracking
-  - Location tagging
-  - Poll creation
-  - Story/Reel support
-  - Spaces/Audio rooms
-
-### Scheduling & Automation
-- **Advanced Scheduling**
-  - Multi-platform scheduling
-  - Timezone management
-  - Bulk scheduling
-  - Schedule optimization
-  - Content calendar views
-  - Gap analysis and recommendations
-
-- **Automation Rules**
-  - Content distribution rules
-  - Automated posting triggers
-  - Content recycling
-  - Trend-based scheduling
-  - Performance-based optimization
-
-### Analytics & Performance
-- **Performance Tracking**
-  - Platform-specific metrics
-  - Engagement analytics
-  - Growth tracking
-  - Content performance goals
-  - A/B testing capabilities
-  - Trend analysis
-
-- **Reporting**
-  - Custom report generation
-  - Performance dashboards
-  - Export capabilities
-  - Real-time analytics
-  - Historical data analysis
-
-### Team Collaboration
-- **Team Management**
-  - Role-based access control
-  - Team member management
-  - Collaboration history
-  - Activity tracking
-  - Project organization
-
-- **Workflow Management**
-  - Approval workflows
-  - Content review process
-  - Comment system
-  - Task assignment
-  - Status tracking
-
-### Security & Infrastructure
-- **User Management**
-  - Authentication
-  - Authorization
-  - Profile management
-  - Notification preferences
-
-- **Security Features**
-  - Row Level Security
-  - Data encryption
-  - Access controls
-  - Audit logging
-
-### Additional Features
-- **Localization**
-  - Multi-language support
-  - Translation memory
-  - Regional content adaptation
-
-- **Integration**
-  - API access
-  - Webhook support
-  - Third-party integrations
-  - Custom integration support
-
-### Content Management
-- AI-powered content generation
-- Customizable content templates
-- Multi-platform content scheduling
-- Content performance analytics
-- Team collaboration tools
-- Content approval workflows
-- Media asset management
-- Content calendar views
-- Content gap analysis
-- KPI tracking and goal setting
-  - Industry-specific KPI templates
-  - Platform-specific benchmarks
-  - AI-assisted KPI generation
-  - Progress tracking and monitoring
-  - Custom goal setting
-  - Performance analytics
-
-## Unique Market Position
-
-Our platform stands out as the only comprehensive AI-powered content creation and scheduling solution that combines:
-
-### Advanced AI Stack
-- GPT-4 for intelligent content generation
-- Stable Diffusion for high-quality image creation
-- AnimateDiff for dynamic video generation
-- CLIP + Embedding Search for style matching
-- Local LM optimization for performance
-
-### Unified Content Pipeline
-- End-to-end content creation and scheduling
-- Cross-platform optimization
-- Style consistency enforcement
-- Automated quality checks
-- Intelligent scheduling
-
-### Enterprise-Ready Architecture
-- AWS-powered infrastructure
-- Auto-scaling capabilities
-- Redis caching for performance
-- Production-grade security
-- Multi-team support
-
-### Key Differentiators
-- Only platform combining advanced AI generation across text, image, and video
-- Unique style matching capabilities using CLIP
-- Enterprise-scale infrastructure from day one
-- Complete automation from content creation to posting
-- Cross-platform optimization and scheduling
+- 🤖 AI-powered content generation and scheduling
+- 👥 Multi-user and team collaboration
+- 🔄 Automated content workflow management
+- ✅ Client approval system
+- 📊 Analytics and performance tracking
+- 🔒 Role-based access control
+- 🚀 Auto-scaling infrastructure
 
 ## Tech Stack
 
-- **Backend**: FastAPI (Python)
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Storage**: AWS S3
-- **Caching**: Redis
-- **AI Services**: Clip API, OpenAI
-- **Frontend**: React/TypeScript (coming soon)
-- **Server Infrastructure**:
-  - AWS EC2 (t3.medium)
-  - Docker & Docker Compose
-  - Nginx (reverse proxy)
-  - SSL/TLS (Let's Encrypt)
-- **Monitoring & Logging**:
-  - AWS CloudWatch
-  - Prometheus (metrics)
-  - Grafana (visualization)
-  - ELK Stack (logging)
-- **CI/CD**:
-  - GitHub Actions
-  - Docker Hub
-  - AWS CodeDeploy
+### Backend
+- FastAPI
+- PostgreSQL
+- Redis
+- Celery
+- SQLAlchemy
+- Alembic
+- OpenAI
+- AWS Services
 
-## Development Setup
+### Infrastructure
+- Docker
+- Terraform
+- AWS (ECS, RDS, ElastiCache)
+- Prometheus & Grafana
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/auto-scheduler.git
-   cd auto-scheduler
-   ```
+## Local Development Setup
 
-2. **Set up Python virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+### Prerequisites
+- Python 3.11+
+- Docker and Docker Compose
+- Poetry (Python package manager)
+- Node.js 18+ (for frontend)
 
-3. **Install dependencies**
-   ```bash
-   pip install -r backend/requirements.txt
-   ```
+### Environment Setup
 
-4. **Configure environment variables**
-   ```bash
-   cp backend/.env.example backend/.env
-   ```
-   Edit `backend/.env` with your configuration values.
-
-5. **Start the development server**
-   ```bash
-   cd backend
-   uvicorn app.main:app --reload
-   ```
-
-## API Documentation
-
-Once the server is running, you can access:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Project Structure
-
-```
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── tests/
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-├── infrastructure/
-│   └── terraform/
-└── docs/
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/auto-scheduler.git
+cd auto-scheduler
 ```
 
-## Development Workflow
+2. Copy the example environment file:
+```bash
+cp .env.example .env
+```
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Run tests
-4. Submit a pull request
+3. Update the `.env` file with your configuration values.
+
+### Using Docker Compose
+
+1. Start all services:
+```bash
+docker-compose up -d
+```
+
+2. Access the services:
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+- pgAdmin: http://localhost:5050
+- Grafana: http://localhost:3000
+- Prometheus: http://localhost:9090
+
+### Manual Setup
+
+1. Install dependencies:
+```bash
+poetry install
+```
+
+2. Set up the database:
+```bash
+poetry run alembic upgrade head
+```
+
+3. Start the development server:
+```bash
+poetry run uvicorn app.main:app --reload
+```
+
+## Database Migrations
+
+Create a new migration:
+```bash
+poetry run alembic revision --autogenerate -m "description"
+```
+
+Apply migrations:
+```bash
+poetry run alembic upgrade head
+```
 
 ## Testing
 
+Run tests with coverage:
 ```bash
-cd backend
-pytest
+poetry run pytest
+```
+
+## Code Quality
+
+Format code:
+```bash
+poetry run black .
+poetry run isort .
+```
+
+Run linting:
+```bash
+poetry run flake8
+poetry run mypy .
 ```
 
 ## Deployment
 
-### Production Infrastructure
+### AWS Deployment
 
-The application is deployed on AWS EC2 with the following configuration:
-
-```yaml
-Instance Type: t3.medium
-Specs:
-  - 2 vCPU
-  - 4 GB RAM
-  - 30 GB gp3 SSD
-OS: Ubuntu 22.04 LTS
-Security:
-  - SSL/TLS encryption
-  - Security groups
-  - Network ACLs
-Monitoring:
-  - AWS CloudWatch
-  - Custom metrics
-  - Alert system
+1. Configure AWS credentials:
+```bash
+aws configure
 ```
 
-### Deployment Process
+2. Initialize Terraform:
+```bash
+cd infrastructure/terraform
+terraform init
+```
 
-1. **Initial Server Setup**
-   ```bash
-   # Install required packages
-   sudo apt update && sudo apt upgrade -y
-   sudo apt install docker.io docker-compose nginx certbot python3-certbot-nginx -y
-   ```
+3. Apply infrastructure changes:
+```bash
+terraform apply
+```
 
-2. **SSL Certificate**
-   ```bash
-   sudo certbot --nginx -d yourdomain.com
-   ```
+### CI/CD Pipeline
 
-3. **Deploy Application**
-   ```bash
-   # Pull and run using Docker Compose
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
+The project uses GitHub Actions for:
+- Running tests
+- Code quality checks
+- Security scanning
+- Automated deployments
 
-4. **Monitor Deployment**
-   ```bash
-   # Check application logs
-   docker-compose logs -f
-   ```
+## API Documentation
 
-### Scaling Considerations
+Detailed API documentation is available at:
+- Swagger UI: `/docs`
+- ReDoc: `/redoc`
 
-- Vertical scaling via EC2 instance type upgrade
-- Horizontal scaling through load balancing (future)
-- Auto-scaling groups (planned)
-- Multi-AZ deployment (planned)
+## Architecture
+
+### System Components
+- FastAPI application server
+- PostgreSQL database with read replicas
+- Redis for caching and session management
+- Celery for background tasks
+- ECS for container orchestration
+- CloudWatch for monitoring
+- S3 for file storage
+
+### Security Features
+- JWT authentication
+- Role-based access control
+- Rate limiting
+- Input validation
+- SQL injection protection
+- XSS prevention
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Implementation Timeline
+## Support
 
-### Full Implementation (4-5 months)
+For support, please:
+1. Check the documentation
+2. Search existing issues
+3. Create a new issue if needed
 
-#### Phase 1: Core Infrastructure & Basic Features (1 month)
-- Database Setup & Configuration
-  - Core tables implementation
-  - Security policies
-  - Initial data models
-- Basic Backend Framework
-  - FastAPI setup
-  - Authentication system
-  - Basic API endpoints
-- Essential Features
-  - User management
-  - Basic content creation
-  - Simple scheduling
-  - Basic media handling
-  - Initial analytics
+## Roadmap
 
-#### Phase 2: Platform Integration & Content Management (1 month)
-- Social Media Platform Integration
-  - Instagram API integration
-  - TikTok API integration
-  - LinkedIn API integration
-  - Facebook API integration
-  - Pinterest API integration
-  - Threads API integration
-  - X/Twitter API integration
-- Advanced Content Management
-  - Content templates
-  - Media library
-  - Version control
-  - Approval workflows
-  - Team collaboration features
-
-#### Phase 3: Advanced Features & Analytics (1 month)
-- Scheduling & Automation
-  - Multi-platform scheduling
-  - Timezone management
-  - Bulk scheduling
-  - Schedule optimization
-  - Content calendar
-  - Automation rules
-- Analytics & Performance
-  - Platform-specific metrics
-  - Engagement analytics
-  - Performance goals
-  - A/B testing
-  - Custom reporting
-  - Real-time analytics
-
-#### Phase 4: Enterprise Features & Optimization (1 month)
-- Team & Collaboration
-  - Role-based access
-  - Team management
-  - Workflow automation
-  - Activity tracking
-  - Project organization
-- Security & Infrastructure
-  - Advanced security features
-  - Data encryption
-  - Audit logging
-  - Backup systems
-  - Monitoring & alerts
-- Performance Optimization
-  - Caching implementation
-  - Query optimization
-  - Load balancing
-  - CDN integration
-  - Performance monitoring
-
-#### Phase 5: Testing, Documentation & Launch (1 month)
-- Comprehensive Testing
-  - Unit testing
-  - Integration testing
-  - Performance testing
-  - Security testing
-  - User acceptance testing
-- Documentation
-  - API documentation
-  - User guides
-  - Developer documentation
-  - Deployment guides
-- Launch Preparation
-  - Production deployment
-  - Monitoring setup
-  - Backup systems
-  - Support documentation
-  - Training materials
-
-## Development Approach
-- Using Cursor for rapid development
-- Working 10-12 hours daily
-- Testing as you build
-- Regular progress reviews
-- Infrastructure-first approach
-- Weekly milestone reviews
-- Continuous integration/deployment
-- Regular security audits
-
-## Technology Stack
-- Backend: FastAPI
-- Database: Supabase
-- Storage: Supabase Storage
-- AI: OpenAI, Clip API
-- Frontend: React/Next.js
-- Infrastructure: Cloud Run, Firebase
-- CDN: Cloudflare
-
-## Feature Documentation
-For detailed feature list, see [Content Features](docs/content_features.md) 
+See our [project board](https://github.com/yourusername/auto-scheduler/projects) for planned features and improvements.

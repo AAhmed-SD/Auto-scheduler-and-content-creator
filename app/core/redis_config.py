@@ -1,71 +1,94 @@
-from typing import Optional, Any
-import redis
-import os
-from dotenv import load_dotenv
+"""Redis configuration for the application."""
 
-# Load environment variables
-load_dotenv()
+import json
+import logging
+from typing import Dict, Any, Optional, Union, cast, Protocol, runtime_checkable
+import redis.asyncio as redis
+from redis.exceptions import RedisError
 
-class RedisConfig:
-    def __init__(self):
-        """Initialize Redis client with configuration from environment variables."""
-        self.redis_client = redis.Redis(
-            host=os.getenv('REDIS_HOST', 'localhost'),
-            port=int(os.getenv('REDIS_PORT', 6379)),
-            password=os.getenv('REDIS_PASSWORD', None),
-            db=0,
-            decode_responses=True,
-            socket_timeout=5,
-            retry_on_timeout=True
-        )
-        self._test_connection()
+logger = logging.getLogger(__name__)
 
-    def _test_connection(self) -> None:
-        """Test Redis connection and raise an error if connection fails."""
-        try:
-            self.redis_client.ping()
-        except redis.ConnectionError as e:
-            raise ConnectionError(f"Failed to connect to Redis: {str(e)}")
+@runtime_checkable
+class AsyncRedisProtocol(Protocol):
+    """Protocol for async Redis client."""
+    async def get(self, name: str) -> Optional[str]: ...
+    async def set(
+        self,
+        name: str,
+        value: Union[str, bytes],
+        ex: Optional[int] = None,
+        px: Optional[int] = None,
+        nx: bool = False,
+        xx: bool = False,
+        keepttl: bool = False,
+        get: bool = False,
+        exat: Optional[int] = None,
+        pxat: Optional[int] = None,
+    ) -> Optional[bool]: ...
+    async def delete(self, *names: str) -> int: ...
+    async def flushdb(self, asynchronous: bool = False) -> bool: ...
 
-    def get(self, key: str) -> Optional[Any]:
+class RedisClient:
+    """Redis client wrapper with type hints and error handling."""
+    
+    def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
+        """Initialize Redis client."""
+        self._client: redis.Redis[str] = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+    
+    async def get(self, key: str) -> Optional[str]:
         """Get value from Redis."""
         try:
-            return self.redis_client.get(key)
-        except redis.RedisError as e:
-            print(f"Error getting key {key} from Redis: {str(e)}")
+            return await self._client.get(key)
+        except RedisError as e:
+            logger.error(f"Redis get error: {str(e)}")
             return None
-
-    def set(self, key: str, value: Any, expiration: int = None) -> bool:
-        """Set value in Redis with optional expiration in seconds."""
+    
+    async def set(self, key: str, value: Union[str, bytes], expire: int = 3600) -> bool:
+        """Set value in Redis with expiration."""
         try:
-            return self.redis_client.set(key, value, ex=expiration)
-        except redis.RedisError as e:
-            print(f"Error setting key {key} in Redis: {str(e)}")
+            result = await self._client.set(key, value, ex=expire)
+            return bool(result) if result is not None else False
+        except RedisError as e:
+            logger.error(f"Redis set error: {str(e)}")
             return False
-
-    def delete(self, key: str) -> bool:
+    
+    async def delete(self, key: str) -> bool:
         """Delete key from Redis."""
         try:
-            return bool(self.redis_client.delete(key))
-        except redis.RedisError as e:
-            print(f"Error deleting key {key} from Redis: {str(e)}")
+            result = await self._client.delete(key)
+            return bool(result)
+        except RedisError as e:
+            logger.error(f"Redis delete error: {str(e)}")
             return False
-
-    def exists(self, key: str) -> bool:
-        """Check if key exists in Redis."""
+    
+    async def get_json(self, key: str) -> Optional[Dict[str, Any]]:
+        """Get JSON value from Redis."""
         try:
-            return bool(self.redis_client.exists(key))
-        except redis.RedisError as e:
-            print(f"Error checking existence of key {key} in Redis: {str(e)}")
-            return False
-
-    def clear_cache(self) -> bool:
-        """Clear all keys in the current database."""
+            value = await self._client.get(key)
+            if value is None:
+                return None
+            return cast(Dict[str, Any], json.loads(value))
+        except (RedisError, json.JSONDecodeError) as e:
+            logger.error(f"Redis get_json error: {str(e)}")
+            return None
+    
+    async def set_json(self, key: str, value: Dict[str, Any], expire: int = 3600) -> bool:
+        """Set JSON value in Redis with expiration."""
         try:
-            return bool(self.redis_client.flushdb())
-        except redis.RedisError as e:
-            print(f"Error clearing Redis cache: {str(e)}")
+            result = await self._client.set(key, json.dumps(value), ex=expire)
+            return bool(result) if result is not None else False
+        except (RedisError, TypeError) as e:
+            logger.error(f"Redis set_json error: {str(e)}")
+            return False
+    
+    async def flushdb(self) -> bool:
+        """Flush all keys from the current database."""
+        try:
+            await self._client.flushdb()
+            return True
+        except RedisError as e:
+            logger.error(f"Redis flushdb error: {str(e)}")
             return False
 
-# Create a singleton instance
-redis_client = RedisConfig() 
+# Create a global Redis client instance
+redis_client = RedisClient()

@@ -34,19 +34,19 @@ variable "min_capacity" {
 variable "max_capacity" {
   description = "Maximum number of ECS tasks to run for the service"
   type        = number
-  default     = 10
+  default     = 50
 }
 
 variable "cpu_target_value" {
   description = "Target CPU utilization percentage (0-100) that triggers autoscaling"
   type        = number
-  default     = 75
+  default     = 60
 }
 
 variable "memory_target_value" {
   description = "Target memory utilization percentage (0-100) that triggers autoscaling"
   type        = number
-  default     = 85
+  default     = 70
 }
 
 variable "scale_in_cooldown" {
@@ -58,7 +58,7 @@ variable "scale_in_cooldown" {
 variable "scale_out_cooldown" {
   description = "Time in seconds to wait between scale-out operations"
   type        = number
-  default     = 180
+  default     = 60
 }
 
 # Database Configuration
@@ -77,38 +77,50 @@ variable "db_username" {
 variable "rds_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t3.micro"
+  default     = "db.r6g.2xlarge"
 }
 
 variable "rds_allocated_storage" {
   description = "Allocated storage for RDS in GB"
   type        = number
-  default     = 20
+  default     = 100
 }
 
 variable "rds_max_storage" {
   description = "Maximum storage for RDS instance in GB"
   type        = number
-  default     = 100
+  default     = 1000
+}
+
+variable "rds_read_replicas" {
+  description = "Number of RDS read replicas"
+  type        = number
+  default     = 3
+}
+
+variable "rds_multi_az" {
+  description = "Enable Multi-AZ deployment for RDS"
+  type        = bool
+  default     = true
 }
 
 # Redis Configuration
 variable "redis_node_type" {
   description = "Redis node type"
   type        = string
-  default     = "cache.t3.micro"
+  default     = "cache.r6g.xlarge"
 }
 
 variable "redis_node_groups" {
   description = "Number of Redis node groups"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "redis_replicas" {
   description = "Number of replicas per Redis node group"
   type        = number
-  default     = 0
+  default     = 2
 }
 
 # Tags
@@ -125,13 +137,13 @@ variable "tags" {
 variable "container_cpu" {
   description = "CPU units for the container (1024 = 1 vCPU)"
   type        = number
-  default     = 256
+  default     = 1024
 }
 
 variable "container_memory" {
   description = "Memory for the container in MiB"
   type        = number
-  default     = 512
+  default     = 2048
 }
 
 variable "container_port" {

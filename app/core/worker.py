@@ -1,11 +1,13 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
-from .scheduler import scheduler
-from .logging_config import loggers
+from typing import Any, Dict
 
-logger = loggers['root']
+from .logging_config import loggers
+from .scheduler import scheduler
+
+logger = loggers["root"]
+
 
 class Worker:
     def __init__(self):
@@ -15,11 +17,11 @@ class Worker:
     async def process_job(self, job: Dict[str, Any]) -> None:
         """Process a single job"""
         try:
-            job_id = job['id']
+            job_id = job["id"]
             logger.info(f"Processing job: {job_id}")
 
             # Update job status to processing
-            await scheduler.update_job_status(job_id, 'processing')
+            await scheduler.update_job_status(job_id, "processing")
 
             # TODO: Implement actual job processing logic
             # This is where you'd add your specific job handling code
@@ -32,7 +34,9 @@ class Worker:
             await asyncio.sleep(2)
 
             # Update job status to completed
-            await scheduler.update_job_status(job_id, 'completed', {'processed_at': datetime.now().isoformat()})
+            await scheduler.update_job_status(
+                job_id, "completed", {"processed_at": datetime.now().isoformat()}
+            )
 
         except Exception as e:
             logger.error(f"Error processing job {job_id}: {str(e)}")
@@ -47,7 +51,7 @@ class Worker:
             try:
                 # Get next job
                 job = await scheduler.get_next_job()
-                
+
                 if job:
                     # Process job
                     await self.process_job(job)
@@ -67,5 +71,6 @@ class Worker:
         self.running = False
         logger.info("Worker stopped")
 
+
 # Create global worker instance
-worker = Worker() 
+worker = Worker()

@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -21,12 +20,82 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-.pytest_cache/
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
 .coverage
+coverage.xml
 htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+logs/
+
+# Local development
+*.sqlite3
+*.db
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Production
+/build
+/dist
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraformrc
+terraform.rc
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Project specific
+data/
+uploads/
+media/
+static/
+*.pem
+*.key
+*.crt
+*.csr
 
 # Node
-node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -42,45 +111,16 @@ out/
 .tern-port
 
 # Environment variables
-.env
 .env.*
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 # Testing
-coverage/
 .nyc_output/
 
 # Build
-dist/
-build/
 out/
 
 # Misc
-*.pem
-*.key
 *.cert
-*.crt
-*.p12
-*.pfx
-*.der
-*.p7b
-*.p7c
-*.p7m
-*.p7s
 *.crl
 *.crl.der
 *.crl.pem
@@ -98,10 +138,6 @@ ENV/
 .venv/
 
 # Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
 *.tfvars.json
 
 # Testing
