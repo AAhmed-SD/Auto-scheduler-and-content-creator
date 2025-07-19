@@ -18,23 +18,8 @@ class Content(BaseModel):
 
     # Relationships
     creator = relationship('User', back_populates='created_content')
-    project = relationship('Project', back_populates='contents')
-    versions = relationship('ContentVersion', back_populates='content')
+    project = relationship('Project', back_populates='content_items')
     schedules = relationship('Schedule', back_populates='content')
-    approvals = relationship('Approval', back_populates='content')
-    client_approvals = relationship('ClientApproval', back_populates='content')
-
-class ContentVersion(BaseModel):
-    """Content version model."""
-    __tablename__ = 'content_versions'
-
-    content_id = Column(Integer, ForeignKey('contents.id'), nullable=False)
-    version_number = Column(Integer, nullable=False)
-    content_data = Column(Text, nullable=False)
-    change_summary = Column(String(500))
-
-    # Relationships
-    content = relationship('Content', back_populates='versions')
 
 class Schedule(BaseModel):
     """Schedule model."""

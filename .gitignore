@@ -144,4 +144,34 @@ ENV/
 .env.local
 .env.development.local
 .env.test.local
-.env.production.local 
+.env.production.local
+
+# Ignore environment and configuration files
+.env
+config.js
+settings.py
+alembic.ini
+docker-compose.yml
+Dockerfile
+
+# Ignore dependency directories
+node_modules/
+venv/
+.mypy_cache/
+auto_scheduler.egg-info/
+__pycache__/
+
+# Ignore build and output directories
+.next/
+dist/
+build/
+out/
+
+# Ignore temporary and backup files
+*.log
+*.tmp
+*.bak
+.DS_Store
+
+# Ignore uploads directory
+uploads/ 
